@@ -9,10 +9,19 @@ Example, from https://answers.yahoo.com/question/index?qid=20150715065224AAL3wcg
 from rCrawler import question
 
 test = question("20150715065224AAL3wcg")
-#you can use test.getAll(), only for class and atribute objects
 test.makeFinalXML()
+
+
+#Show you all xml as string, ready to make a file
+print test.finalXMLString
+#Show you all xml parsed as JSON format
+print test.final
+
+#Alternatives
+#you can use test.getAll(), only for class and atribute objects
 #makeFinalXML()
+
 #test.xml got parsed xml from page
-#test.finalXML #got a lxml object with all pages and metadata, cleared
-print test.finalXMLString #will show you all xml as string, ready to make a file
-print test.final #will show you all xml parsed as JSON format.
+#test.finalXML #got a lxml object with all pages and metadata, cleared.
+
+----- end code ----
