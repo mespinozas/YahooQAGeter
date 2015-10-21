@@ -6,7 +6,7 @@ Require lxml lib (sudo apt-get install python-lxml)
 Example, from https://answers.yahoo.com/question/index?qid=20150715065224AAL3wcg question:
 
 ---- Code ----
-from rCrawler import question
+from crawler import question
 
 test = question("20150715065224AAL3wcg")
 test.makeFinalXML()
