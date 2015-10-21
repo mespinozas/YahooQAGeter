@@ -2,7 +2,7 @@ from datetime import datetime
 from lxml import etree
 from lxml.builder import E
 import urllib, urllib2, re
-from core import xml2json
+import xml2json
 
 #Clear invalid chars on lxml
 def validXmlCharOrdinal(c):
