@@ -3,31 +3,29 @@ from lxml import etree
 from lxml.builder import E
 import urllib, urllib2, re
 import xml2json
+from urlparse import urlparse
 
-#Clear invalid chars on lxml
 def validXmlCharOrdinal(c):
 	codepoint = ord(c)
+	#Esto es para que a la hora de crear el xml, no tenga problemas con caracteres invalidos (Suponemos siguientes versiones de lxml sulucionara el problema)
 	return (
 		0x20 <= codepoint <= 0xD7FF or
 		codepoint in (0x9, 0xA, 0xD) or
 		0xE000 <= codepoint <= 0xFFFD or
 		0x10000 <= codepoint <= 0x10FFFF
 		)
-
+	
 def cleanStringToLXML(inputString):
 		return ''.join(c for c in inputString if validXmlCharOrdinal(c))
 
 class question():
-	def __init__(self, qid):
+	def __init__(self, qid, proxy = None):
 		if(self.checkQID(qid)):
 			self.url = "https://answers.yahoo.com/question/index?qid=%s"%(qid)
 			self.qid = qid
+			self.proxy = proxy
 		else:
 			self.__del__()
-
-	def __del__(self):
-		del(self)
-		raise NameError
 
 	def checkQID(self,qid):
 		pattern = re.compile("^\d{14}\w{7}$")
@@ -41,9 +39,18 @@ class question():
 			return False
 			
 	def getSourceCode(self, url):
-		respuesta = urllib2.urlopen(url)
-		codigo = respuesta.read()
-		return codigo
+		#si proxy es distinto de None, tiene la forma
+		#{"protocolo":"<protocolo>", "urlProxy":"<direccion del proxy: user:pass@url>", "puerto":"<puerto del proxy>"}
+		#Ejemplo {"protocolo":"https", "urlProxy":"52.53.254.181", "puerto":"8083"}
+		if(self.proxy is None):
+			opener = urllib2.urlopen(url)
+			data = opener.read()
+		else:
+			proxy = urllib2.ProxyHandler({self.proxy["protocolo"]: "{}:{}".format(self.proxy["urlProxy"], self.proxy["puerto"])})
+			opener = urllib2.build_opener(proxy)
+			urllib2.install_opener(opener)
+			data = urllib2.urlopen(url).read()
+		return data
 	
 	def getXML(self, filtered = False):
 		try:
@@ -79,6 +86,27 @@ class question():
 		else:
 			self.getXML()
 			self.getCategory()
+
+#Canonical se refiere al idioma de la pregunta y en que lenguaje de yahoo se encuentra
+	def getCanonical(self):
+		if hasattr(self, 'xml'):
+			canonical = self.xml.xpath("//link[@rel='canonical']")
+			if(len(canonical) != 1):
+				return None
+			canonical = canonical[0]
+			self.urlCanonical = canonical.attrib["href"]
+			parsed = urlparse(self.urlCanonical)
+			if(parsed.netloc == "answers.yahoo.com"):
+				self.canonical = "EN"
+			else:
+				self.canonical = parsed.netloc[0:parsed.netloc.find(".")].upper()
+
+
+
+
+		else:
+			self.getXML()
+			self.getCanonical()
 		
 	def getTitle(self):
 		if hasattr(self, 'xml'):
@@ -214,17 +242,19 @@ class question():
 	
 	
 	def getAll(self, filtered = False):
-		self.getXML(filtered = filtered)
+		if hasattr(self, 'xml'):
+			self.getXML(filtered = filtered)
 		self.getCategory()
 		self.getTitle()
 		self.getBody()
 		self.getUser()
 		self.getKeywords()
 		self.getAnswers()
+		self.getCanonical()
 		
 	def makeFinalXML(self, filtered = False):
 		self.getAll(filtered = filtered)
-		salida = E("question",qid = self.qid,user = self.user[0],idUser = str(self.user[1]),pages = str(self.pageCount),url = self.url, date = datetime.strftime(self.date,"%Y-%m-%d %H:%M:%S"))
+		salida = E("question",qid = self.qid,user = self.user[0],idUser = str(self.user[1]),pages = str(self.pageCount),url = self.url,urlCanonical = self.urlCanonical,canonical = self.canonical,date = datetime.strftime(self.date,"%Y-%m-%d %H:%M:%S"))
 		body = E("body",type = "container")
 		for idx,elemento in enumerate(self.body):
 			if(idx == 0):
