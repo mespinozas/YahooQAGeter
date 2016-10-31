@@ -258,11 +258,11 @@ class question():
 			for link in respuesta[0].findall("a"):
 				links.append(link.get("href"))
 		#Obtiene el tiempo en formato Y!QA desde que fue escrita la respuesta
-		time = answer.xpath("descendant::node()//div[@class='Pt-15']/span[@class='Clr-88']")
+		time = answer.xpath("descendant::node()//span[@class='Clr-88 ya-localtime']")
 		if(len(time) > 0):
 			for t in time:
-				if("Anonymous" not in t.text):
-					relativeDate = t.text[3:-1]
+				relativeDate = t.text[3:-1]
+				postDate = datetime.fromtimestamp(int(t.attrib["data-ts"]))
 		else:
 			relativeDate = None
 		#Obtiene votos positivos
@@ -277,7 +277,7 @@ class question():
 			thumbDown = int(thumbDown[0].text)
 		else:
 			thumbDown = None
-		return {"text":texto,"user":usuario,"idUser":idUsuario,"links":links,"id":id,"images":imgs,"relativeDate":relativeDate, "thumbUp":thumbUp, "thumbDown":thumbDown, "topContributor":topContributorBool }
+		return {"text":texto,"user":usuario,"idUser":idUsuario,"links":links,"id":id,"images":imgs,"relativeDate":relativeDate, "thumbUp":thumbUp, "thumbDown":thumbDown, "topContributor":topContributorBool, "postDate":postDate }
 	
 	def getAll(self, filtered = False):
 		if not hasattr(self, 'xml'):
@@ -319,7 +319,7 @@ class question():
 			categories.append(E("category",elemento[1], categoryId = str(elemento[0]), level = str(idx+1)))
 		answers = E("answers")
 		if(hasattr(self, 'bestAnswer')):
-			bestAnswer = (E("answer", self.bestAnswer['text'], type = "bestAnswer", user= self.bestAnswer['user'], idUser= str(self.bestAnswer['idUser']), id= str(self.bestAnswer['id']), relativeDate= str(self.bestAnswer['relativeDate']), thumbUp= str(self.bestAnswer['thumbUp']), thumbDown= str(self.bestAnswer['thumbDown']), topContributor = str(self.bestAnswer['topContributor']) ))
+			bestAnswer = (E("answer", self.bestAnswer['text'], type = "bestAnswer", user= self.bestAnswer['user'], idUser= str(self.bestAnswer['idUser']), id= str(self.bestAnswer['id']), relativeDate= str(self.bestAnswer['relativeDate']), thumbUp= str(self.bestAnswer['thumbUp']), thumbDown= str(self.bestAnswer['thumbDown']), topContributor = str(self.bestAnswer['topContributor']), postDate = str(self.bestAnswer['self.bestAnswer']) ))
 			links = E("links")
 			for link in self.bestAnswer["links"]:
 				links.append(E("link",link))
@@ -330,7 +330,7 @@ class question():
 			bestAnswer.append(images)
 			answers.append(bestAnswer)
 		for elemento in self.answers:
-			answer = (E("answer", elemento['text'], type = "answer", user= elemento['user'], idUser= str(elemento['idUser']), id= str(elemento['id']), relativeDate= str(elemento['relativeDate']), thumbUp= str(elemento['thumbUp']), thumbDown= str(elemento['thumbDown']), topContributor = str(elemento['topContributor']) ))
+			answer = (E("answer", elemento['text'], type = "answer", user= elemento['user'], idUser= str(elemento['idUser']), id= str(elemento['id']), relativeDate= str(elemento['relativeDate']), thumbUp= str(elemento['thumbUp']), thumbDown= str(elemento['thumbDown']), topContributor = str(elemento['topContributor']), postDate = str(elemento['self.bestAnswer']) ))
 			links = E("links")
 			for link in elemento["links"]:
 				links.append(E("link",link))
