@@ -5,6 +5,8 @@ import urllib, urllib2, re
 import xml2json
 from urlparse import urlparse
 
+outputFile = open('categories.txt','w+')
+
 def validXmlCharOrdinal(c):
 	codepoint = ord(c)
 	#Esto es para que a la hora de crear el xml, no tenga problemas con caracteres invalidos (Suponemos siguientes versiones de lxml sulucionara el problema)
@@ -14,7 +16,7 @@ def validXmlCharOrdinal(c):
 		0xE000 <= codepoint <= 0xFFFD or
 		0x10000 <= codepoint <= 0x10FFFF
 		)
-	
+
 def cleanStringToLXML(inputString):
 		return ''.join(c for c in inputString if validXmlCharOrdinal(c))
 
@@ -45,7 +47,7 @@ class question():
 			return True
 		else:
 			return False
-			
+
 	def getSourceCode(self, url, timeOut = 3):
 		#si proxy es distinto de None, tiene la forma
 		#{"protocolo":"<protocolo>", "urlProxy":"<direccion del proxy: user:pass@url>", "puerto":"<puerto del proxy>"}
@@ -59,7 +61,7 @@ class question():
 			urllib2.install_opener(opener)
 			data = urllib2.urlopen(url, timeout = timeOut).read()
 		return data
-	
+
 	def getXML(self, _url = None, filtered = False):
 		try:
 			if(_url is None):
@@ -75,13 +77,13 @@ class question():
 			self.xml.append(etree.HTML(cleanStringToLXML(datos)))
 		else:
 			self.xml.append(etree.HTML(datos))
-			
+
 	def parseAtribs(self, atributos):
 		salida = {}
 		for elemento in atributos.split(";"):
 			salida[elemento.split(":")[0]] = elemento.split(":")[1]
 		return salida
-			
+
 	def getCategory(self):
 		if hasattr(self, 'xml'):
 			categorias = []
@@ -92,6 +94,9 @@ class question():
 				categoria = categoria[0].findall("a")
 				for elemento in categoria:
 					categorias.append((self.parseAtribs(elemento.attrib['data-ylk'])["catId"],elemento.text))
+				outTxt = '{} {}\n'.format(self.qid.strip(),categorias[0][1])
+				print outTxt
+				outputFile.write(outTxt);
 				self.categories = categorias
 				return True
 		else:
@@ -125,7 +130,7 @@ class question():
 		else:
 			self.getXML()
 			self.getCanonical()
-		
+
 	def getTitle(self):
 		if hasattr(self, 'xml'):
 			titulo = self.xml[0].xpath("//h1[contains(@class,'Mb-10')]|h1[contains(@class,'Fw-300')]|h1[contains(@class,'Fz-24')]")
@@ -157,7 +162,7 @@ class question():
 		else:
 			self.getXML()
 			self.getBody()
-			
+
 	def getUser(self):
 		if hasattr(self, 'xml'):
 			profile = self.xml[0].xpath("//div[@id='yq-question-detail-profile-img']")
@@ -179,7 +184,7 @@ class question():
 		else:
 			self.getXML()
 			self.getUser()
-			
+
 	def getKeywords(self):
 		if hasattr(self, 'xml'):
 			keywords = self.xml[0].xpath("//meta[@name='keywords']")[0]
@@ -190,7 +195,7 @@ class question():
 		else:
 			self.getXML()
 			self.getKeywords()
-			
+
 	def getAnswers(self, page = 1, filtered = False):
 		if hasattr(self, 'xml'):
 			if(not hasattr(self, 'answers')):
@@ -222,7 +227,7 @@ class question():
 		else:
 			self.getXML()
 			self.getAnswers(filtered = filtered)
-			
+
 	def getAnswer(self,answer):
 		texto = ""
 		links = []
@@ -278,7 +283,7 @@ class question():
 		else:
 			thumbDown = None
 		return {"text":texto,"user":usuario,"idUser":idUsuario,"links":links,"id":id,"images":imgs,"relativeDate":relativeDate, "thumbUp":thumbUp, "thumbDown":thumbDown, "topContributor":topContributorBool, "postDate":postDate }
-	
+
 	def getAll(self, filtered = False):
 		if not hasattr(self, 'xml'):
 			self.getXML(filtered = filtered)
@@ -291,7 +296,7 @@ class question():
 		self.getCanonical()
 		self.getAnswers()
 		self.makeXMLRaw()
-		
+
 	def makeXMLRaw(self):
 		salida = E("root", qid = self.qid,user = self.user[0],idUser = str(self.user[1]),pages = str(self.pageCount),url = self.url,urlCanonical = self.urlCanonical,canonical = self.canonical, date = datetime.strftime(self.date,"%Y-%m-%d %H:%M:%S"), followers = str(self.followers), crawledDate = datetime.strftime(self.crawledDate,"%Y-%m-%d %H:%M:%S"))
 		for idx, i in enumerate(self.xml):
@@ -340,6 +345,7 @@ class question():
 			answer.append(links)
 			answer.append(images)
 			answers.append(answer)
+
 		salida.append(title)
 		salida.append(body)
 		salida.append(keywords)
@@ -349,4 +355,3 @@ class question():
 		self.finalXMLString = etree.tostring(salida,pretty_print=True, xml_declaration=True, encoding='UTF-8')
 		self.finalXMLJSON = xml2json.xml_to_json(self.finalXML)
 		self.finalXMLRAWString = etree.tostring(self.XMLRAW,pretty_print=True, xml_declaration=True, encoding='UTF-8')
-		
