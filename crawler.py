@@ -5,7 +5,8 @@ import urllib, urllib2, re
 import xml2json
 from urlparse import urlparse
 
-outputFile = open('categories.txt','w+')
+outputFile = open('resumen.csv','w+');
+outputFile.write('ID,Followers,Answers')
 
 def validXmlCharOrdinal(c):
 	codepoint = ord(c)
@@ -94,9 +95,9 @@ class question():
 				categoria = categoria[0].findall("a")
 				for elemento in categoria:
 					categorias.append((self.parseAtribs(elemento.attrib['data-ylk'])["catId"],elemento.text))
-				outTxt = '{} {}\n'.format(self.qid.strip(),categorias[0][1])
-				print outTxt
-				outputFile.write(outTxt);
+				# outTxt = "'{}' :'{}',\n".format(self.qid.strip(),categorias[0][1])
+				# print outTxt
+				# outputFile.write(outTxt);
 				self.categories = categorias
 				return True
 		else:
@@ -109,7 +110,10 @@ class question():
 			if(len(buff) == 1):
 				self.followers = int(buff[0].get("data-ya-fc"))
 			else:
-				self.followers = None
+				self.followers = 0
+			# outTxt = "'{}' :'{}',\n".format(self.qid.strip(),self.followers)
+			# print outTxt
+			# outputFileF.write(outTxt);
 		else:
 			self.getXML()
 			self.getCategory()
@@ -224,6 +228,9 @@ class question():
 						check = self.parseAtribs(pages[-1].get("data-ylk"))
 						if(int(check["page"]) == page + 1):
 							self.getAnswers(page = page + 1, filtered = filtered)
+			# outTxt = "'{}' :'{}',\n".format(self.qid.strip(),categorias[0][1])
+			# print outTxt
+			# outputFileR.write(outTxt);
 		else:
 			self.getXML()
 			self.getAnswers(filtered = filtered)
@@ -295,6 +302,9 @@ class question():
 		self.getKeywords()
 		self.getCanonical()
 		self.getAnswers()
+		outTxt = "{},{},{}\n".format(self.qid.strip(),self.followers, len(self.answers))
+		print outTxt
+		outputFile.write(outTxt);
 		self.makeXMLRaw()
 
 	def makeXMLRaw(self):
